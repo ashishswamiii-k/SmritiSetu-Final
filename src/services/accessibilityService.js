@@ -14,6 +14,10 @@ export class AccessibilityService {
     this.listeners = new Set();
   }
 
+  init() {
+    this.applyToDOM();
+  }
+
   getSettings() {
     if (typeof localStorage === 'undefined') return this.defaults;
     const stored = localStorage.getItem('smritisetu_accessibility');

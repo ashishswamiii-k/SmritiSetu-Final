@@ -23,7 +23,8 @@ export function App() {
   const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
-    accessibilityService.init();
+    if (accessibilityService.init) accessibilityService.init();
+    else if (accessibilityService.applyToDOM) accessibilityService.applyToDOM();
     loadProfilesAndActiveState();
   }, []);
 
