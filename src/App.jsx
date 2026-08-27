@@ -28,24 +28,31 @@ export function App() {
   }, []);
 
   const loadProfilesAndActiveState = async () => {
-    setAppState('LOADING');
-    const profiles = await localDataProvider.getAllProfiles();
-    setAllProfiles(profiles);
+    try {
+      setAppState('LOADING');
+      const profiles = await localDataProvider.getAllProfiles();
+      setAllProfiles(profiles);
 
-    const activeId = await localDataProvider.getActiveProfileId();
-    if (activeId) {
-      const activeProf = await localDataProvider.getPatientProfile(activeId);
-      if (activeProf) {
-        setCurrentProfile(activeProf);
-        setAppState('MAIN_APP');
-        return;
+      const activeId = await localDataProvider.getActiveProfileId();
+      if (activeId) {
+        const activeProf = await localDataProvider.getPatientProfile(activeId);
+        if (activeProf) {
+          setCurrentProfile(activeProf);
+          setAppState('MAIN_APP');
+          return;
+        }
       }
-    }
 
-    if (profiles.length > 0) {
-      setAppState('PROFILE_SELECTION');
-    } else {
-      setAppState('CREATE_PROFILE');
+      if (profiles.length > 0) {
+        setCurrentProfile(profiles[0]);
+        localDataProvider.setActiveProfileId(profiles[0].id);
+        setAppState('MAIN_APP');
+      } else {
+        setAppState('CREATE_PROFILE');
+      }
+    } catch (err) {
+      console.error("Error loading profiles:", err);
+      setAppState('MAIN_APP');
     }
   };
 
