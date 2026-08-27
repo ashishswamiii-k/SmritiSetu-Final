@@ -5,17 +5,99 @@ export class LocalDataProvider extends DataProvider {
   constructor() {
     super();
     this.dbPromise = initDB();
-    this.seedDefaultReminders();
+    this.activeProfileIdKey = 'smritisetu_active_profile_id';
   }
 
-  async seedDefaultReminders() {
+  // --- Multi-User Profile Management ---
+  async getActiveProfileId() {
+    if (typeof localStorage !== 'undefined') {
+      const activeId = localStorage.getItem(this.activeProfileIdKey);
+      if (activeId) return activeId;
+    }
+    const profiles = await this.getAllProfiles();
+    if (profiles.length > 0) {
+      this.setActiveProfileId(profiles[0].id);
+      return profiles[0].id;
+    }
+    return null;
+  }
+
+  setActiveProfileId(id) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(this.activeProfileIdKey, id);
+    }
+  }
+
+  async clearActiveProfileId() {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(this.activeProfileIdKey);
+    }
+  }
+
+  async getAllProfiles() {
     try {
       const db = await this.dbPromise;
-      const count = await db.count('reminders');
-      if (count === 0) {
+      const profiles = await db.getAll('profiles');
+      return profiles || [];
+    } catch (e) {
+      console.warn("getAllProfiles error:", e);
+      return [];
+    }
+  }
+
+  async getPatientProfile(profileId = null) {
+    const targetId = profileId || (await this.getActiveProfileId());
+    if (!targetId) return null;
+    try {
+      const db = await this.dbPromise;
+      const profile = await db.get('profiles', targetId);
+      if (profile) return profile;
+    } catch (e) {
+      console.warn("getPatientProfile error:", e);
+    }
+    return null;
+  }
+
+  async savePatientProfile(profile) {
+    const id = profile.id || `patient_${Date.now()}`;
+    const record = {
+      id,
+      name: profile.name,
+      gender: profile.gender || 'unspecified',
+      avatar: profile.avatar || 'male_1',
+      avatarType: profile.avatarType || 'vector', // 'vector' | 'photo'
+      photoDataUrl: profile.photoDataUrl || null,
+      language: profile.language || 'en',
+      age: profile.age || null,
+      textSize: profile.textSize || 'standard',
+      voiceEnabled: profile.voiceEnabled ?? true,
+      createdAt: profile.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      const db = await this.dbPromise;
+      await db.put('profiles', record);
+      this.setActiveProfileId(id);
+      await this.seedProfileReminders(id);
+    } catch (e) {
+      console.warn("savePatientProfile DB error:", e);
+    }
+    await this.queueSyncEvent('UPDATE_PROFILE', record);
+    return record;
+  }
+
+  async seedProfileReminders(patientId) {
+    try {
+      const db = await this.dbPromise;
+      const allReminders = await db.getAll('reminders');
+      const profileReminders = allReminders.filter(r => r.patientId === patientId);
+
+      if (profileReminders.length === 0) {
         const defaultSchedule = [
           {
-            id: 'item_1',
+            id: `item_1_${patientId}`,
+            patientId,
             label: 'Morning Medicine',
             time: '08:00 AM',
             type: 'medicine',
@@ -26,7 +108,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_2',
+            id: `item_2_${patientId}`,
+            patientId,
             label: 'Breakfast & Tea',
             time: '08:30 AM',
             type: 'meal',
@@ -37,7 +120,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_3',
+            id: `item_3_${patientId}`,
+            patientId,
             label: 'Drink Water',
             time: '10:00 AM',
             type: 'hydration',
@@ -48,7 +132,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_4',
+            id: `item_4_${patientId}`,
+            patientId,
             label: 'Memory Match Activity',
             time: '10:30 AM',
             type: 'game',
@@ -59,7 +144,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_5',
+            id: `item_5_${patientId}`,
+            patientId,
             label: 'Morning Walk',
             time: '11:30 AM',
             type: 'exercise',
@@ -70,7 +156,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_6',
+            id: `item_6_${patientId}`,
+            patientId,
             label: 'Lunch & Rest',
             time: '01:00 PM',
             type: 'meal',
@@ -81,7 +168,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_7',
+            id: `item_7_${patientId}`,
+            patientId,
             label: 'Mood Check-in',
             time: '03:00 PM',
             type: 'activity',
@@ -92,7 +180,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_8',
+            id: `item_8_${patientId}`,
+            patientId,
             label: 'Evening Medicine',
             time: '07:00 PM',
             type: 'medicine',
@@ -103,7 +192,8 @@ export class LocalDataProvider extends DataProvider {
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'item_9',
+            id: `item_9_${patientId}`,
+            patientId,
             label: 'Peaceful Bedtime',
             time: '09:30 PM',
             type: 'rest',
@@ -121,44 +211,22 @@ export class LocalDataProvider extends DataProvider {
         await tx.done;
       }
     } catch (err) {
-      console.warn("IndexedDB seed warning:", err);
+      console.warn("seedProfileReminders error:", err);
     }
   }
 
-  async getPatientProfile() {
-    try {
-      const db = await this.dbPromise;
-      const profile = await db.get('patients', 'active_patient');
-      if (profile) return profile;
-    } catch (e) {
-      console.warn("Fallback to localStorage profile:", e);
-    }
-    const local = localStorage.getItem('smritisetu_profile');
-    return local ? JSON.parse(local) : null;
-  }
-
-  async savePatientProfile(profile) {
-    const record = { id: 'active_patient', ...profile, updatedAt: new Date().toISOString() };
-    localStorage.setItem('smritisetu_profile', JSON.stringify(record));
-    try {
-      const db = await this.dbPromise;
-      await db.put('patients', record);
-    } catch (e) {
-      console.warn("DB save profile warning:", e);
-    }
-    await this.queueSyncEvent('UPDATE_PROFILE', record);
-    return record;
-  }
-
+  // --- Data Scoped by Active Patient ID ---
   async getReminders() {
+    const patientId = await this.getActiveProfileId();
+    if (!patientId) return [];
     try {
       const db = await this.dbPromise;
-      const reminders = await db.getAll('reminders');
-      if (reminders && reminders.length > 0) return reminders;
+      const all = await db.getAll('reminders');
+      return all.filter(r => r.patientId === patientId);
     } catch (e) {
-      console.warn("DB getReminders warning:", e);
+      console.warn("getReminders error:", e);
+      return [];
     }
-    return [];
   }
 
   async updateReminderStatus(id, status) {
@@ -176,14 +244,17 @@ export class LocalDataProvider extends DataProvider {
   }
 
   async addReminder(reminder) {
+    const patientId = await this.getActiveProfileId();
     const db = await this.dbPromise;
     const record = {
       id: reminder.id || `item_${Date.now()}`,
+      patientId,
       label: reminder.label,
       time: reminder.time || '12:00 PM',
       type: reminder.type || 'activity',
       icon: reminder.icon || '📌',
       category: reminder.category || 'General',
+      repeat: reminder.repeat || 'Every day',
       status: 'pending',
       syncStatus: 'pending',
       updatedAt: new Date().toISOString()
@@ -194,18 +265,23 @@ export class LocalDataProvider extends DataProvider {
   }
 
   async getGameSessions(gameType = null) {
+    const patientId = await this.getActiveProfileId();
+    if (!patientId) return [];
     const db = await this.dbPromise;
     const all = await db.getAll('game_sessions');
+    const userSessions = all.filter(s => s.patientId === patientId);
     if (gameType) {
-      return all.filter(s => s.gameType === gameType);
+      return userSessions.filter(s => s.gameType === gameType);
     }
-    return all.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return userSessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
 
   async saveGameSession(session) {
+    const patientId = await this.getActiveProfileId();
     const db = await this.dbPromise;
     const record = {
       id: session.id || `session_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      patientId,
       gameType: session.gameType,
       score: session.score,
       accuracy: session.accuracy,
@@ -221,15 +297,20 @@ export class LocalDataProvider extends DataProvider {
   }
 
   async getMoodLogs() {
+    const patientId = await this.getActiveProfileId();
+    if (!patientId) return [];
     const db = await this.dbPromise;
-    const logs = await db.getAll('mood_checkins');
-    return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const all = await db.getAll('mood_checkins');
+    const userLogs = all.filter(m => m.patientId === patientId);
+    return userLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
 
   async saveMoodLog(log) {
+    const patientId = await this.getActiveProfileId();
     const db = await this.dbPromise;
     const record = {
       id: log.id || `mood_${Date.now()}`,
+      patientId,
       moodValue: log.moodValue,
       label: log.label,
       emoji: log.emoji,
@@ -243,10 +324,12 @@ export class LocalDataProvider extends DataProvider {
 
   async queueSyncEvent(type, payload) {
     try {
+      const patientId = await this.getActiveProfileId();
       const db = await this.dbPromise;
       const eventId = `sync_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
       const event = {
         eventId,
+        patientId,
         type,
         payload,
         status: 'PENDING',

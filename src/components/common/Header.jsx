@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { syncService } from '../../services/syncService';
 import { voiceService } from '../../services/voiceService';
 import { reminderService } from '../../services/reminderService';
+import { ProfileMenuDropdown } from './ProfileMenuDropdown';
 import logoImg from '../../assets/logo.png';
-import { Volume2, Wifi, WifiOff, RefreshCw, User } from 'lucide-react';
+import { Volume2, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
-export function Header({ patientName, activeTab, onTabChange }) {
-  const [networkStatus, setNetworkStatus] = useState({ state: 'ONLINE', label: 'Online', icon: '🟢', pendingCount: 0 });
+export function Header({ profile, activeTab, onNavigate, onRequestLogout }) {
+  const [networkStatus, setNetworkStatus] = useState({ state: 'ONLINE', label: 'Online', pendingCount: 0 });
 
   useEffect(() => {
     async function updateStatus() {
@@ -39,8 +40,8 @@ export function Header({ patientName, activeTab, onTabChange }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-[#F6F3EC] border-b border-[#1B3A3A]/12 px-4 py-3 shadow-xs transition-colors">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-[#F6F3EC] border-b border-[#1B3A3A]/12 px-4 md:px-8 py-3 shadow-xs transition-colors">
+      <div className="w-full max-w-[1500px] mx-auto flex items-center justify-between">
         {/* Left: Mobile Brand & Page Title */}
         <div className="flex items-center gap-3">
           <div className="md:hidden flex items-center gap-2">
@@ -50,12 +51,12 @@ export function Header({ patientName, activeTab, onTabChange }) {
             <h1 className="text-xl font-serif-fraunces text-[#1B3A3A] leading-tight">
               {getPageTitle()}
             </h1>
-            <p className="text-xs text-[#5B6461] hidden sm:block">Every Day, Remembered.</p>
+            <p className="text-xs text-[#5B6461] hidden sm:block font-medium">Every Day, Remembered.</p>
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* Quick "What's Next?" Voice Button */}
           <button
             onClick={handleWhatsNextVoice}
@@ -83,14 +84,12 @@ export function Header({ patientName, activeTab, onTabChange }) {
             <span className="hidden xs:inline">{networkStatus.label}</span>
           </div>
 
-          {/* Profile Trigger Button */}
-          <button
-            onClick={() => onTabChange('profile')}
-            className="w-9 h-9 rounded-xl bg-white border border-[#1B3A3A]/12 hover:border-[#1B3A3A] flex items-center justify-center text-[#1B3A3A] font-bold text-sm transition-colors min-w-[36px] min-h-[36px]"
-            aria-label="Profile Settings"
-          >
-            <User className="w-4 h-4 text-[#1B3A3A]" />
-          </button>
+          {/* Profile Dropdown Menu */}
+          <ProfileMenuDropdown
+            profile={profile}
+            onNavigate={onNavigate}
+            onRequestLogout={onRequestLogout}
+          />
         </div>
       </div>
     </header>
