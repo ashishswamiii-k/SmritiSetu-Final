@@ -1,22 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { reminderService } from '../../services/reminderService';
+import { moodService } from '../../services/moodService';
 import { voiceService } from '../../services/voiceService';
 import { i18nService } from '../../services/i18nService';
-import { Gamepad2, Smile, Clock, Volume2, CheckCircle2, ChevronRight, Sparkles } from 'lucide-react';
+import { WhatsNextCard } from './WhatsNextCard';
+import { Gamepad2, Smile, Clock, Calendar, ChevronRight, CheckCircle2, Trophy, Brain } from 'lucide-react';
 
 export function TodayHome({ patientName, onNavigate, onTriggerToast }) {
   const [reminders, setReminders] = useState([]);
+  const [nextActivity, setNextActivity] = useState(null);
+  const [recentMood, setRecentMood] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadTodayReminders() {
-      setLoading(true);
-      const data = await reminderService.getReminders();
-      setReminders(data);
-      setLoading(false);
-    }
-    loadTodayReminders();
+    loadHomeData();
   }, []);
+
+  const loadHomeData = async () => {
+    setLoading(true);
+    const data = await reminderService.getReminders();
+    setReminders(data);
+    const next = await reminderService.getWhatsNextActivity();
+    setNextActivity(next);
+    const moods = await moodService.getMoodHistory();
+    if (moods && moods.length > 0) setRecentMood(moods[0]);
+    setLoading(false);
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -27,130 +36,168 @@ export function TodayHome({ patientName, onNavigate, onTriggerToast }) {
 
   const handleMarkDone = async (id, label) => {
     await reminderService.markAsDone(id);
-    const updated = await reminderService.getReminders();
-    setReminders(updated);
+    await loadHomeData();
     if (onTriggerToast) {
       onTriggerToast(`✓ Completed "${label}"`, 'success');
     }
     voiceService.speak(`Completed ${label}`);
   };
 
-  const handleVoiceHelp = () => {
-    const greetingText = `${getGreeting()}, ${patientName || 'friend'}. ${i18nService.t('voiceHelpGreeting')}`;
-    voiceService.speak(greetingText);
-    if (onTriggerToast) {
-      onTriggerToast("Voice assistance active. Reading today's summary...", 'info');
-    }
-  };
-
-  const pendingReminders = reminders.filter(r => r.status !== 'done');
+  const completedCount = reminders.filter(r => r.status === 'done').length;
+  const totalCount = reminders.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const pendingList = reminders.filter(r => r.status !== 'done');
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto space-y-6">
-      {/* Greeting Banner */}
-      <div className="bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/30 p-6 rounded-3xl shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-          <Sparkles className="w-32 h-32 text-[#B45309]" />
-        </div>
-        <div className="relative z-10">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#B45309]">Today</span>
-          <h2 className="text-3xl font-extrabold text-[#78350F] tracking-tight mt-1">
-            {getGreeting()}{patientName ? `, ${patientName}` : ''}!
+    <div className="pb-24 pt-4 px-4 max-w-7xl mx-auto space-y-6">
+      {/* Top Greeting Header */}
+      <div className="bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/30 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-[#78350F] tracking-tight">
+            {getGreeting()}{patientName ? `, ${patientName}` : ''}
           </h2>
-          <p className="text-sm font-medium text-[#92400E] mt-1">
-            {pendingReminders.length > 0
-              ? `You have ${pendingReminders.length} activities scheduled for today.`
-              : 'All scheduled activities for today are completed!'}
+          <p className="text-base font-medium text-[#92400E] mt-1">
+            Here's your day at a glance.
           </p>
         </div>
-      </div>
 
-      {/* Main Action Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Play a Game */}
         <button
-          onClick={() => onNavigate('games')}
-          className="bg-white border-2 border-[#E7E5E4] hover:border-[#D97706] p-5 rounded-3xl shadow-sm flex flex-col justify-between text-left transition-all active:scale-95 min-h-[140px] group"
+          onClick={() => onNavigate('myday')}
+          className="bg-white hover:bg-[#FEF3C7] text-[#78350F] font-bold py-3 px-5 rounded-2xl border border-[#FDE68A] flex items-center gap-2 transition-colors shadow-xs text-sm min-h-[48px] shrink-0"
         >
-          <div className="w-12 h-12 rounded-2xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-            <Gamepad2 className="w-7 h-7" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-[#1E1B4B] leading-tight">
-              {i18nService.t('playAGame')}
-            </h3>
-            <p className="text-xs text-[#78716C] mt-0.5">Fun memory puzzles</p>
-          </div>
-        </button>
-
-        {/* How Am I Feeling? */}
-        <button
-          onClick={() => onNavigate('mood')}
-          className="bg-white border-2 border-[#E7E5E4] hover:border-[#D97706] p-5 rounded-3xl shadow-sm flex flex-col justify-between text-left transition-all active:scale-95 min-h-[140px] group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-[#E0E7FF] text-[#3730A3] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-            <Smile className="w-7 h-7" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-[#1E1B4B] leading-tight">
-              {i18nService.t('howAmIFeeling')}
-            </h3>
-            <p className="text-xs text-[#78716C] mt-0.5">Check in today</p>
-          </div>
-        </button>
-
-        {/* My Reminders */}
-        <button
-          onClick={() => onNavigate('reminders')}
-          className="bg-white border-2 border-[#E7E5E4] hover:border-[#D97706] p-5 rounded-3xl shadow-sm flex flex-col justify-between text-left transition-all active:scale-95 min-h-[140px] group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-[#DCFCE7] text-[#166534] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-            <Clock className="w-7 h-7" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-[#1E1B4B] leading-tight">
-              {i18nService.t('myReminders')}
-            </h3>
-            <p className="text-xs text-[#78716C] mt-0.5">Medicine & routines</p>
-          </div>
-        </button>
-
-        {/* Voice Help */}
-        <button
-          onClick={handleVoiceHelp}
-          className="bg-white border-2 border-[#E7E5E4] hover:border-[#D97706] p-5 rounded-3xl shadow-sm flex flex-col justify-between text-left transition-all active:scale-95 min-h-[140px] group"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-[#FAE8FF] text-[#86198F] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-            <Volume2 className="w-7 h-7" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-[#1E1B4B] leading-tight">
-              {i18nService.t('voiceHelp')}
-            </h3>
-            <p className="text-xs text-[#78716C] mt-0.5">Listen & speak</p>
-          </div>
+          <Calendar className="w-5 h-5 text-[#D97706]" />
+          <span>View My Day Schedule</span>
         </button>
       </div>
 
-      {/* Today's Reminders Card Section */}
+      {/* Row 1 Grid: What's Next Card | Today's Progress | Mood Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* What's Next Prominent Card (7 cols) */}
+        <div className="lg:col-span-7">
+          <WhatsNextCard
+            nextActivity={nextActivity}
+            onMarkDone={handleMarkDone}
+            onNavigate={onNavigate}
+          />
+        </div>
+
+        {/* Progress & Mood Column (5 cols) */}
+        <div className="lg:col-span-5 grid grid-cols-2 gap-4">
+          {/* Today's Progress Card */}
+          <div className="bg-white border-2 border-[#E7E5E4] p-4 sm:p-5 rounded-3xl shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#78716C]">Progress</span>
+              <Trophy className="w-5 h-5 text-[#D97706]" />
+            </div>
+            <div>
+              <div className="text-2xl font-extrabold text-[#1E1B4B]">
+                {completedCount} <span className="text-sm font-normal text-[#78716C]">of {totalCount}</span>
+              </div>
+              <p className="text-xs text-[#78716C] font-semibold mt-0.5">Activities Done</p>
+              {/* Progress Bar */}
+              <div className="w-full bg-stone-100 rounded-full h-2.5 mt-3 overflow-hidden">
+                <div
+                  className="bg-[#D97706] h-2.5 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mood Check-in Widget */}
+          <button
+            onClick={() => onNavigate('mood')}
+            className="bg-white border-2 border-[#E7E5E4] hover:border-[#D97706] p-4 sm:p-5 rounded-3xl shadow-xs flex flex-col justify-between text-left transition-all active:scale-95 group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#78716C]">Mood</span>
+              <Smile className="w-5 h-5 text-[#3730A3]" />
+            </div>
+            <div>
+              <div className="text-2xl mb-1">{recentMood?.emoji || '🙂'}</div>
+              <div className="text-base font-bold text-[#1E1B4B]">
+                {recentMood?.label || 'Check In'}
+              </div>
+              <p className="text-xs text-[#78716C] mt-0.5">Tap to update</p>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Row 2: Quick Cognitive Games Grid */}
       <div className="bg-white border border-[#E7E5E4] rounded-3xl p-5 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-[#1E1B4B] flex items-center gap-2">
-            <span>💊</span>
-            <span>{i18nService.t('todaysReminders')}</span>
+            <Gamepad2 className="w-5 h-5 text-[#D97706]" />
+            <span>Quick Mind Puzzles</span>
           </h3>
           <button
-            onClick={() => onNavigate('reminders')}
+            onClick={() => onNavigate('games')}
             className="text-xs font-bold text-[#D97706] hover:text-[#B45309] flex items-center gap-1 min-h-[40px] px-2"
           >
-            <span>View All</span>
+            <span>All Games</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Game 1 */}
+          <button
+            onClick={() => onNavigate('games')}
+            className="bg-[#FFFDF9] border border-[#E7E5E4] hover:border-[#D97706] p-4 rounded-2xl text-left space-y-2 transition-all active:scale-98"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">☕</span>
+              <h4 className="text-base font-bold text-[#1E1B4B]">Memory Match</h4>
+            </div>
+            <p className="text-xs text-[#78716C]">Match familiar everyday pairs.</p>
+          </button>
+
+          {/* Game 2 */}
+          <button
+            onClick={() => onNavigate('games')}
+            className="bg-[#FFFDF9] border border-[#E7E5E4] hover:border-[#D97706] p-4 rounded-2xl text-left space-y-2 transition-all active:scale-98"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🌅</span>
+              <h4 className="text-base font-bold text-[#1E1B4B]">Routine Recall</h4>
+            </div>
+            <p className="text-xs text-[#78716C]">Sequencing everyday steps.</p>
+          </button>
+
+          {/* Game 3 */}
+          <button
+            onClick={() => onNavigate('games')}
+            className="bg-[#FFFDF9] border border-[#E7E5E4] hover:border-[#D97706] p-4 rounded-2xl text-left space-y-2 transition-all active:scale-98"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🧩</span>
+              <h4 className="text-base font-bold text-[#1E1B4B]">Pattern Game</h4>
+            </div>
+            <p className="text-xs text-[#78716C]">Shape & visual object matching.</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Row 3: My Day Schedule Preview */}
+      <div className="bg-white border border-[#E7E5E4] rounded-3xl p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-[#1E1B4B] flex items-center gap-2">
+            <Clock className="w-5 h-5 text-[#D97706]" />
+            <span>Today's Upcoming Schedule</span>
+          </h3>
+          <button
+            onClick={() => onNavigate('myday')}
+            className="text-xs font-bold text-[#D97706] hover:text-[#B45309] flex items-center gap-1 min-h-[40px] px-2"
+          >
+            <span>Full Schedule</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
         {loading ? (
-          <div className="text-center py-6 text-stone-400">Loading your activities...</div>
-        ) : pendingReminders.length === 0 ? (
+          <div className="text-center py-6 text-stone-400">Loading your schedule...</div>
+        ) : pendingList.length === 0 ? (
           <div className="text-center py-8 bg-[#FAF9F6] rounded-2xl border border-dashed border-[#E7E5E4]">
             <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-[#1E1B4B]">
@@ -159,22 +206,25 @@ export function TodayHome({ patientName, onNavigate, onTriggerToast }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {pendingReminders.slice(0, 3).map((item) => (
+            {pendingList.slice(0, 3).map((item) => (
               <div
                 key={item.id}
                 className="flex items-center justify-between p-4 rounded-2xl bg-[#FFFDF9] border border-[#F3EFE6] hover:border-[#D97706] transition-all"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3.5">
+                  <span className="text-xs font-bold px-2.5 py-1 bg-[#FEF3C7] text-[#B45309] rounded-xl border border-[#FDE68A]">
+                    {item.time}
+                  </span>
                   <span className="text-2xl">{item.icon || '📌'}</span>
                   <div>
                     <h4 className="text-base font-bold text-[#1E1B4B]">{item.label}</h4>
-                    <p className="text-xs text-[#78716C] font-semibold">{item.time}</p>
+                    <span className="text-[11px] font-semibold text-[#78716C]">{item.category || item.type}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleMarkDone(item.id, item.label)}
-                  className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-xs transition-colors min-h-[44px]"
+                  className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition-colors min-h-[44px]"
                 >
                   {i18nService.t('markDone')}
                 </button>
@@ -182,13 +232,6 @@ export function TodayHome({ patientName, onNavigate, onTriggerToast }) {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Gentle Daily Reflection Box */}
-      <div className="bg-[#FAF9F6] border border-[#E7E5E4] p-5 rounded-3xl text-center">
-        <p className="text-sm italic text-[#57534E]">
-          "Every moment is a fresh beginning. Take your time and enjoy your day."
-        </p>
       </div>
     </div>
   );

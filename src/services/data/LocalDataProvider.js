@@ -13,50 +13,109 @@ export class LocalDataProvider extends DataProvider {
       const db = await this.dbPromise;
       const count = await db.count('reminders');
       if (count === 0) {
-        const defaultReminders = [
+        const defaultSchedule = [
           {
-            id: 'rem_1',
+            id: 'item_1',
             label: 'Morning Medicine',
             time: '08:00 AM',
             type: 'medicine',
             icon: '💊',
+            category: 'Medicine',
             status: 'pending',
             syncStatus: 'synced',
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'rem_2',
+            id: 'item_2',
+            label: 'Breakfast & Tea',
+            time: '08:30 AM',
+            type: 'meal',
+            icon: '🥣',
+            category: 'Meal',
+            status: 'pending',
+            syncStatus: 'synced',
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'item_3',
             label: 'Drink Water',
             time: '10:00 AM',
             type: 'hydration',
             icon: '💧',
+            category: 'Hydration',
             status: 'pending',
             syncStatus: 'synced',
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'rem_3',
+            id: 'item_4',
+            label: 'Memory Match Activity',
+            time: '10:30 AM',
+            type: 'game',
+            icon: '🧠',
+            category: 'Activity',
+            status: 'pending',
+            syncStatus: 'synced',
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'item_5',
             label: 'Morning Walk',
-            time: '11:00 AM',
-            type: 'activity',
+            time: '11:30 AM',
+            type: 'exercise',
             icon: '🚶',
+            category: 'Exercise',
             status: 'pending',
             syncStatus: 'synced',
             updatedAt: new Date().toISOString()
           },
           {
-            id: 'rem_4',
+            id: 'item_6',
+            label: 'Lunch & Rest',
+            time: '01:00 PM',
+            type: 'meal',
+            icon: '🍲',
+            category: 'Meal',
+            status: 'pending',
+            syncStatus: 'synced',
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'item_7',
+            label: 'Mood Check-in',
+            time: '03:00 PM',
+            type: 'activity',
+            icon: '😊',
+            category: 'Self Check',
+            status: 'pending',
+            syncStatus: 'synced',
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'item_8',
             label: 'Evening Medicine',
             time: '07:00 PM',
             type: 'medicine',
             icon: '💊',
+            category: 'Medicine',
+            status: 'pending',
+            syncStatus: 'synced',
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'item_9',
+            label: 'Peaceful Bedtime',
+            time: '09:30 PM',
+            type: 'rest',
+            icon: '🌙',
+            category: 'Rest',
             status: 'pending',
             syncStatus: 'synced',
             updatedAt: new Date().toISOString()
           }
         ];
         const tx = db.transaction('reminders', 'readwrite');
-        for (const rem of defaultReminders) {
+        for (const rem of defaultSchedule) {
           await tx.store.put(rem);
         }
         await tx.done;
@@ -119,11 +178,12 @@ export class LocalDataProvider extends DataProvider {
   async addReminder(reminder) {
     const db = await this.dbPromise;
     const record = {
-      id: reminder.id || `rem_${Date.now()}`,
+      id: reminder.id || `item_${Date.now()}`,
       label: reminder.label,
       time: reminder.time || '12:00 PM',
       type: reminder.type || 'activity',
       icon: reminder.icon || '📌',
+      category: reminder.category || 'General',
       status: 'pending',
       syncStatus: 'pending',
       updatedAt: new Date().toISOString()
@@ -170,7 +230,7 @@ export class LocalDataProvider extends DataProvider {
     const db = await this.dbPromise;
     const record = {
       id: log.id || `mood_${Date.now()}`,
-      moodValue: log.moodValue, // 'good' | 'okay' | 'not_good' | 'very_good'
+      moodValue: log.moodValue,
       label: log.label,
       emoji: log.emoji,
       timestamp: log.timestamp || new Date().toISOString(),

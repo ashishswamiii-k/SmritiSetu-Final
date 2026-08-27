@@ -29,6 +29,13 @@ export class ReminderService {
       completedReminders: completed
     };
   }
+
+  async getWhatsNextActivity() {
+    const list = await this.getReminders();
+    const pending = list.filter(r => r.status !== 'done');
+    if (pending.length === 0) return null;
+    return pending[0]; // Returns immediate next activity
+  }
 }
 
 export const reminderService = new ReminderService();
