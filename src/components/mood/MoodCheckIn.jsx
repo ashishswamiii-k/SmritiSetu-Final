@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { moodService, MOOD_OPTIONS } from '../../services/moodService';
 import { voiceService } from '../../services/voiceService';
-import { Heart, Calendar, CheckCircle2 } from 'lucide-react';
+import { Calendar, CheckCircle2, Smile } from 'lucide-react';
 
 export function MoodCheckIn({ onTriggerToast }) {
   const [selectedMood, setSelectedMood] = useState(null);
@@ -28,46 +28,46 @@ export function MoodCheckIn({ onTriggerToast }) {
     voiceService.speak(feedbackText);
 
     if (onTriggerToast) {
-      onTriggerToast("Saved on this device. It will sync when connected.", 'success');
+      onTriggerToast("Saved on this device.", 'success');
     }
 
     setTimeout(() => {
       setIsSubmitted(false);
       setSelectedMood(null);
-    }, 4000);
+    }, 3500);
   };
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-2xl mx-auto space-y-6">
+    <div className="pb-24 pt-4 px-4 max-w-4xl mx-auto space-y-5">
       {/* Top Banner */}
-      <div className="bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/30 p-6 rounded-3xl shadow-sm">
-        <span className="text-xs font-bold uppercase tracking-wider text-[#B45309]">Self Expression</span>
-        <h2 className="text-3xl font-extrabold text-[#78350F] mt-1">How are you feeling today?</h2>
-        <p className="text-sm font-medium text-[#92400E] mt-1">
+      <div className="card-product p-6 bg-white shadow-xs">
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5B6461]">Self Expression</span>
+        <h2 className="text-3xl font-serif-fraunces text-[#1B3A3A] mt-0.5">How are you feeling today?</h2>
+        <p className="text-sm font-medium text-[#5B6461] mt-1">
           Take a moment to check in with yourself.
         </p>
       </div>
 
       {/* Mood Options Grid */}
-      <div className="bg-white border-2 border-[#E7E5E4] rounded-3xl p-6 shadow-sm space-y-4">
+      <div className="card-product p-6 bg-white shadow-xs space-y-4">
         {isSubmitted ? (
           <div className="text-center py-8 space-y-3 animate-scale-up">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-14 h-14 bg-[#7FA593]/20 text-[#1B3A3A] rounded-full flex items-center justify-center mx-auto border border-[#7FA593]/30">
+              <CheckCircle2 className="w-8 h-8 text-[#7FA593]" />
             </div>
-            <h3 className="text-2xl font-bold text-[#1E1B4B]">Thank you for telling us.</h3>
-            <p className="text-sm text-[#78716C]">Your response has been saved comfortably.</p>
+            <h3 className="text-2xl font-serif-fraunces text-[#1B3A3A]">Thank you for telling us.</h3>
+            <p className="text-sm text-[#5B6461]">Your response has been saved comfortably.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {MOOD_OPTIONS.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleSelectMood(item.id)}
-                className={`p-5 rounded-3xl border-2 flex flex-col items-center justify-center text-center transition-all active:scale-95 min-h-[130px] hover:border-[#D97706] bg-[#FFFDF9] ${item.color}`}
+                className="card-product p-5 flex flex-col items-center justify-center text-center transition-all active:scale-95 min-h-[120px] hover:border-[#1B3A3A] bg-[#F6F3EC]/50 hover:bg-[#F6F3EC]"
               >
-                <span className="text-5xl mb-2">{item.emoji}</span>
-                <span className="text-base font-bold">{item.label}</span>
+                <span className="text-4xl mb-2">{item.emoji}</span>
+                <span className="text-sm font-bold text-[#1B3A3A]">{item.label}</span>
               </button>
             ))}
           </div>
@@ -75,14 +75,14 @@ export function MoodCheckIn({ onTriggerToast }) {
       </div>
 
       {/* History Log */}
-      <div className="bg-white border border-[#E7E5E4] rounded-3xl p-5 shadow-xs space-y-4">
-        <h3 className="text-xl font-bold text-[#1E1B4B] flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-[#D97706]" />
+      <div className="card-product p-5 bg-white shadow-xs space-y-3">
+        <h3 className="text-base font-bold text-[#1B3A3A] flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#1B3A3A]" />
           <span>Recent Mood Check-ins</span>
         </h3>
 
         {history.length === 0 ? (
-          <div className="text-center py-6 text-stone-400 text-sm">
+          <div className="text-center py-6 text-[#5B6461] text-xs">
             Your mood check-ins will appear here.
           </div>
         ) : (
@@ -90,13 +90,13 @@ export function MoodCheckIn({ onTriggerToast }) {
             {history.slice(0, 5).map((log) => (
               <div
                 key={log.id}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FFFDF9] border border-[#F3EFE6]"
+                className="flex items-center justify-between p-3 rounded-xl bg-[#F6F3EC]/50 border border-[#1B3A3A]/10"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{log.emoji || '🙂'}</span>
-                  <span className="text-base font-bold text-[#1E1B4B]">{log.label}</span>
+                  <span className="text-xl">{log.emoji || '🙂'}</span>
+                  <span className="text-sm font-bold text-[#1B3A3A]">{log.label}</span>
                 </div>
-                <span className="text-xs text-[#78716C] font-semibold">
+                <span className="text-xs text-[#5B6461] font-medium">
                   {new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { syncService } from '../../services/syncService';
 import { voiceService } from '../../services/voiceService';
 import { reminderService } from '../../services/reminderService';
+import logoImg from '../../assets/logo.png';
 import { Volume2, Wifi, WifiOff, RefreshCw, User } from 'lucide-react';
 
 export function Header({ patientName, activeTab, onTabChange }) {
@@ -33,23 +34,23 @@ export function Header({ patientName, activeTab, onTabChange }) {
       case 'reminders': return 'Reminders';
       case 'mood': return 'Mood Check-in';
       case 'profile': return 'Profile & Settings';
-      case 'home': default: return 'SmritiSetu';
+      case 'home': default: return 'Today';
     }
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-[#FFFDF9] border-b border-[#F3EFE6] px-4 py-3 shadow-xs transition-colors">
+    <header className="sticky top-0 z-30 bg-[#F6F3EC] border-b border-[#1B3A3A]/12 px-4 py-3 shadow-xs transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Left: Branding & Page Title */}
+        {/* Left: Mobile Brand & Page Title */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#D97706] text-white flex items-center justify-center font-bold text-lg md:hidden">
-            S
+          <div className="md:hidden flex items-center gap-2">
+            <img src={logoImg} alt="SmritiSetu" className="h-8 w-auto object-contain" />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-[#1E1B4B] leading-tight">
+            <h1 className="text-xl font-serif-fraunces text-[#1B3A3A] leading-tight">
               {getPageTitle()}
             </h1>
-            <p className="text-xs text-[#78716C] hidden sm:block">A gentle companion for everyday moments</p>
+            <p className="text-xs text-[#5B6461] hidden sm:block">Every Day, Remembered.</p>
           </div>
         </div>
 
@@ -58,26 +59,26 @@ export function Header({ patientName, activeTab, onTabChange }) {
           {/* Quick "What's Next?" Voice Button */}
           <button
             onClick={handleWhatsNextVoice}
-            className="hidden sm:flex items-center gap-1.5 bg-[#FEF3C7] text-[#78350F] hover:bg-[#FDE68A] px-3.5 py-2 rounded-2xl text-xs font-bold transition-colors border border-[#FDE68A] min-h-[40px]"
+            className="hidden sm:flex items-center gap-1.5 bg-[#E8825F] hover:bg-[#d97352] text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-colors shadow-xs min-h-[38px]"
             title="Read next activity aloud"
           >
-            <Volume2 className="w-4 h-4 text-[#D97706]" />
+            <Volume2 className="w-4 h-4 text-white" />
             <span>What's Next?</span>
           </button>
 
-          {/* Network Status Badge */}
+          {/* Network Status Indicator */}
           <div 
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
               networkStatus.state === 'ONLINE' 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                ? 'bg-[#7FA593]/15 text-[#1B3A3A] border-[#7FA593]/30' 
                 : networkStatus.state === 'SYNC_PENDING' 
-                ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                ? 'bg-[#E8825F]/15 text-[#E8825F] border-[#E8825F]/30' 
                 : 'bg-rose-50 text-rose-800 border-rose-200'
             }`}
             title={`Status: ${networkStatus.label} (${networkStatus.pendingCount} pending)`}
           >
-            {networkStatus.state === 'ONLINE' && <Wifi className="w-3.5 h-3.5 text-emerald-600" />}
-            {networkStatus.state === 'SYNC_PENDING' && <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin" />}
+            {networkStatus.state === 'ONLINE' && <Wifi className="w-3.5 h-3.5 text-[#7FA593]" />}
+            {networkStatus.state === 'SYNC_PENDING' && <RefreshCw className="w-3.5 h-3.5 text-[#E8825F] animate-spin" />}
             {networkStatus.state === 'OFFLINE' && <WifiOff className="w-3.5 h-3.5 text-rose-600" />}
             <span className="hidden xs:inline">{networkStatus.label}</span>
           </div>
@@ -85,10 +86,10 @@ export function Header({ patientName, activeTab, onTabChange }) {
           {/* Profile Trigger Button */}
           <button
             onClick={() => onTabChange('profile')}
-            className="w-10 h-10 rounded-2xl bg-white border border-[#E7E5E4] hover:border-[#D97706] flex items-center justify-center text-[#1E1B4B] font-bold text-sm transition-colors min-w-[40px] min-h-[40px]"
+            className="w-9 h-9 rounded-xl bg-white border border-[#1B3A3A]/12 hover:border-[#1B3A3A] flex items-center justify-center text-[#1B3A3A] font-bold text-sm transition-colors min-w-[36px] min-h-[36px]"
             aria-label="Profile Settings"
           >
-            <User className="w-5 h-5 text-[#D97706]" />
+            <User className="w-4 h-4 text-[#1B3A3A]" />
           </button>
         </div>
       </div>

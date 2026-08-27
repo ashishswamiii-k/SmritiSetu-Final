@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reminderService } from '../../services/reminderService';
 import { voiceService } from '../../services/voiceService';
-import { Calendar, CheckCircle2, Volume2, Plus, Clock, Sparkles } from 'lucide-react';
+import { Calendar, CheckCircle2, Volume2, Plus, Clock, Pill, Droplet, Utensils, Footprints, Moon, Coffee } from 'lucide-react';
 
 export function MyDaySchedule({ onTriggerToast }) {
   const [schedule, setSchedule] = useState([]);
@@ -10,6 +10,7 @@ export function MyDaySchedule({ onTriggerToast }) {
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('04:00 PM');
   const [newCategory, setNewCategory] = useState('Activity');
+  const [newRepeat, setNewRepeat] = useState('Every day');
 
   useEffect(() => {
     loadSchedule();
@@ -55,6 +56,7 @@ export function MyDaySchedule({ onTriggerToast }) {
       time: newTime,
       type: newCategory.toLowerCase(),
       category: newCategory,
+      repeat: newRepeat,
       icon
     });
 
@@ -66,6 +68,17 @@ export function MyDaySchedule({ onTriggerToast }) {
     }
   };
 
+  const getCategoryIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'medicine': return <Pill className="w-4 h-4 text-[#E8825F]" />;
+      case 'hydration': return <Droplet className="w-4 h-4 text-[#1B3A3A]" />;
+      case 'meal': return <Utensils className="w-4 h-4 text-[#E8825F]" />;
+      case 'exercise': return <Footprints className="w-4 h-4 text-[#7FA593]" />;
+      case 'rest': return <Moon className="w-4 h-4 text-[#1B3A3A]" />;
+      default: return <Coffee className="w-4 h-4 text-[#E8825F]" />;
+    }
+  };
+
   const filteredItems = schedule.filter(item => {
     if (filter === 'pending') return item.status !== 'done';
     if (filter === 'completed') return item.status === 'done';
@@ -73,32 +86,30 @@ export function MyDaySchedule({ onTriggerToast }) {
   });
 
   const completedCount = schedule.filter(s => s.status === 'done').length;
-  const progressPercent = schedule.length > 0 ? Math.round((completedCount / schedule.length) * 100) : 0;
 
   return (
-    <div className="pb-24 pt-4 px-4 max-w-4xl mx-auto space-y-6">
+    <div className="pb-24 pt-4 px-4 max-w-4xl mx-auto space-y-5">
       {/* Top Banner */}
-      <div className="bg-gradient-to-br from-[#FEF3C7] to-[#FDE68A] border border-[#F59E0B]/30 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="card-product p-6 bg-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#B45309]">Chronological Timeline</span>
-          <h2 className="text-3xl font-extrabold text-[#78350F] tracking-tight">My Day Schedule</h2>
-          <p className="text-sm font-medium text-[#92400E] mt-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#5B6461]">Chronological Timeline</span>
+          <h2 className="text-3xl font-serif-fraunces text-[#1B3A3A] tracking-tight">My Day Schedule</h2>
+          <p className="text-sm font-medium text-[#5B6461] mt-1">
             Your full daily routine from morning to evening.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Progress Widget */}
-          <div className="bg-white/90 border border-[#FDE68A] px-4 py-2.5 rounded-2xl text-center shadow-xs">
-            <span className="text-xs font-bold text-[#78350F] uppercase block">Progress</span>
-            <span className="text-lg font-extrabold text-[#D97706]">{completedCount} of {schedule.length}</span>
+          <div className="bg-[#F6F3EC] border border-[#1B3A3A]/12 px-3.5 py-2 rounded-xl text-center shadow-xs">
+            <span className="text-[10px] font-bold text-[#5B6461] uppercase block">Completed</span>
+            <span className="text-base font-extrabold text-[#7FA593]">{completedCount} of {schedule.length}</span>
           </div>
 
           <button
             onClick={handleReadSchedule}
-            className="bg-white hover:bg-[#FEF3C7] text-[#B45309] font-bold py-3 px-4 rounded-2xl border border-[#FDE68A] flex items-center gap-2 transition-colors min-h-[48px] shadow-xs text-sm"
+            className="bg-[#1B3A3A] hover:bg-[#254f4f] text-white font-bold py-2.5 px-3.5 rounded-xl flex items-center gap-1.5 transition-colors text-xs min-h-[42px] shadow-xs"
           >
-            <Volume2 className="w-5 h-5 text-[#D97706]" />
+            <Volume2 className="w-4 h-4 text-[#7FA593]" />
             <span>Read Schedule</span>
           </button>
         </div>
@@ -106,15 +117,15 @@ export function MyDaySchedule({ onTriggerToast }) {
 
       {/* Filter Tabs & Add Action */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-2 bg-[#FAF9F6] p-1.5 rounded-2xl border border-[#E7E5E4]">
+        <div className="flex gap-2 bg-[#F6F3EC] p-1 rounded-xl border border-[#1B3A3A]/12">
           {['all', 'pending', 'completed'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl font-bold text-xs capitalize transition-all min-h-[38px] ${
+              className={`px-3.5 py-1.5 rounded-lg font-bold text-xs capitalize transition-all min-h-[34px] ${
                 filter === f
-                  ? 'bg-[#D97706] text-white shadow-xs'
-                  : 'text-[#57534E] hover:text-[#1E1B4B]'
+                  ? 'bg-[#1B3A3A] text-white shadow-xs'
+                  : 'text-[#5B6461] hover:text-[#1B3A3A]'
               }`}
             >
               {f}
@@ -124,7 +135,7 @@ export function MyDaySchedule({ onTriggerToast }) {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-xs py-2.5 px-4 rounded-2xl flex items-center gap-1.5 shadow-xs transition-colors min-h-[44px]"
+          className="bg-[#E8825F] hover:bg-[#d97352] text-white font-bold text-xs py-2 px-3.5 rounded-xl flex items-center gap-1 shadow-xs transition-colors min-h-[38px]"
         >
           <Plus className="w-4 h-4" />
           <span>Add Activity</span>
@@ -132,11 +143,11 @@ export function MyDaySchedule({ onTriggerToast }) {
       </div>
 
       {/* Chronological Timeline List */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {filteredItems.length === 0 ? (
-          <div className="bg-white border-2 border-dashed border-[#E7E5E4] rounded-3xl p-8 text-center text-[#78716C]">
-            <Calendar className="w-10 h-10 text-stone-300 mx-auto mb-2" />
-            <p className="text-base font-semibold">No activities found in this view.</p>
+          <div className="card-product p-8 text-center text-[#5B6461] bg-white">
+            <Calendar className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold">No activities found in this view.</p>
           </div>
         ) : (
           filteredItems.map((item) => {
@@ -144,41 +155,46 @@ export function MyDaySchedule({ onTriggerToast }) {
             return (
               <div
                 key={item.id}
-                className={`p-4 sm:p-5 rounded-3xl border-2 flex items-center justify-between gap-3 transition-all ${
+                className={`card-product p-4 flex items-center justify-between gap-3 transition-all ${
                   isDone
-                    ? 'bg-stone-50 border-stone-200 opacity-75'
-                    : 'bg-white border-[#E7E5E4] hover:border-[#D97706] shadow-xs'
+                    ? 'bg-stone-50/60 opacity-80'
+                    : 'bg-white hover:border-[#1B3A3A]'
                 }`}
               >
                 {/* Time & Icon */}
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="min-w-[65px] text-center font-bold text-sm text-[#D97706] bg-[#FEF3C7] py-2 px-2.5 rounded-2xl border border-[#FDE68A]">
+                <div className="flex items-center gap-3">
+                  <div className="min-w-[65px] text-center font-bold text-xs text-white bg-[#1B3A3A] py-1.5 px-2 rounded-lg">
                     {item.time}
                   </div>
 
-                  <span className="text-2xl sm:text-3xl">{item.icon || '📌'}</span>
+                  <div className="w-9 h-9 rounded-lg bg-[#F6F3EC] border border-[#1B3A3A]/10 flex items-center justify-center shrink-0">
+                    {getCategoryIcon(item.type)}
+                  </div>
 
                   <div>
-                    <h3 className={`text-base sm:text-lg font-bold ${isDone ? 'line-through text-stone-500' : 'text-[#1E1B4B]'}`}>
+                    <h3 className={`text-sm sm:text-base font-bold ${isDone ? 'line-through text-stone-400' : 'text-[#1B3A3A]'}`}>
                       {item.label}
                     </h3>
-                    <span className="inline-block text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#FAF9F6] text-[#78716C] border border-[#E7E5E4] mt-0.5">
-                      {item.category || item.type}
-                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-[#F6F3EC] text-[#5B6461] border border-[#1B3A3A]/10">
+                        {item.category || item.type}
+                      </span>
+                      <span className="text-[10px] text-[#5B6461]">{item.repeat || 'Every day'}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Status / Action Button */}
                 <div>
                   {isDone ? (
-                    <div className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-100 text-emerald-800 font-bold rounded-2xl text-xs border border-emerald-300">
-                      <CheckCircle2 className="w-4 h-4" />
+                    <div className="flex items-center gap-1 px-3 py-1.5 bg-[#7FA593]/20 text-[#1B3A3A] font-bold rounded-lg text-xs border border-[#7FA593]/40">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#7FA593]" />
                       <span>✓ Done</span>
                     </div>
                   ) : (
                     <button
                       onClick={() => handleMarkDone(item.id, item.label)}
-                      className="bg-[#D97706] hover:bg-[#B45309] text-white font-bold text-xs sm:text-sm px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl shadow-xs transition-colors min-h-[44px] active:scale-95 shrink-0"
+                      className="bg-[#E8825F] hover:bg-[#d97352] text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-xs transition-colors min-h-[38px] active:scale-95 shrink-0"
                     >
                       Mark Done
                     </button>
@@ -193,63 +209,77 @@ export function MyDaySchedule({ onTriggerToast }) {
       {/* Add Activity Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border-2 border-[#D97706] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up">
-            <h3 className="text-2xl font-bold text-[#1E1B4B]">Add Schedule Activity</h3>
+          <div className="bg-white border border-[#1B3A3A]/20 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 animate-scale-up">
+            <h3 className="text-xl font-serif-fraunces text-[#1B3A3A]">Add Schedule Activity</h3>
             
-            <form onSubmit={handleAddSubmit} className="space-y-4">
+            <form onSubmit={handleAddSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-[#1E1B4B] mb-1">Activity Title</label>
+                <label className="block text-xs font-bold text-[#1B3A3A] mb-1">Activity Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Afternoon Tea, Light Yoga"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full bg-[#FFFDF9] border border-[#E7E5E4] rounded-2xl p-3.5 text-base font-medium outline-hidden focus:border-[#D97706]"
+                  className="w-full bg-[#F6F3EC] border border-[#1B3A3A]/12 rounded-xl p-3 text-sm font-medium outline-hidden focus:border-[#1B3A3A]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#1E1B4B] mb-1">Time</label>
+                  <label className="block text-xs font-bold text-[#1B3A3A] mb-1">Time</label>
                   <input
                     type="text"
                     required
                     value={newTime}
                     onChange={(e) => setNewTime(e.target.value)}
                     placeholder="04:00 PM"
-                    className="w-full bg-[#FFFDF9] border border-[#E7E5E4] rounded-2xl p-3.5 text-base font-medium outline-hidden focus:border-[#D97706]"
+                    className="w-full bg-[#F6F3EC] border border-[#1B3A3A]/12 rounded-xl p-3 text-sm font-medium outline-hidden focus:border-[#1B3A3A]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#1E1B4B] mb-1">Category</label>
+                  <label className="block text-xs font-bold text-[#1B3A3A] mb-1">Category</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-full bg-[#FFFDF9] border border-[#E7E5E4] rounded-2xl p-3.5 text-base font-medium outline-hidden focus:border-[#D97706]"
+                    className="w-full bg-[#F6F3EC] border border-[#1B3A3A]/12 rounded-xl p-3 text-sm font-medium outline-hidden focus:border-[#1B3A3A]"
                   >
-                    <option value="Activity">😊 Activity</option>
-                    <option value="Medicine">💊 Medicine</option>
-                    <option value="Hydration">💧 Hydration</option>
-                    <option value="Meal">🥣 Meal</option>
-                    <option value="Exercise">🚶 Exercise</option>
-                    <option value="Rest">🌙 Rest</option>
+                    <option value="Activity">Activity</option>
+                    <option value="Medicine">Medicine</option>
+                    <option value="Hydration">Hydration</option>
+                    <option value="Meal">Meal</option>
+                    <option value="Exercise">Exercise</option>
+                    <option value="Rest">Rest</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#1B3A3A] mb-1">Repeat</label>
+                <select
+                  value={newRepeat}
+                  onChange={(e) => setNewRepeat(e.target.value)}
+                  className="w-full bg-[#F6F3EC] border border-[#1B3A3A]/12 rounded-xl p-3 text-sm font-medium outline-hidden focus:border-[#1B3A3A]"
+                >
+                  <option value="Every day">Every day</option>
+                  <option value="One-time">One-time</option>
+                  <option value="Mon / Wed / Fri">Mon / Wed / Fri</option>
+                  <option value="Tue / Thu / Sat">Tue / Thu / Sat</option>
+                </select>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-1/2 py-3 border border-[#E7E5E4] rounded-2xl font-bold text-sm text-[#57534E]"
+                  className="w-1/2 py-2.5 border border-[#1B3A3A]/12 rounded-xl font-bold text-xs text-[#5B6461]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-1/2 py-3 bg-[#D97706] text-white rounded-2xl font-bold text-sm shadow-xs"
+                  className="w-1/2 py-2.5 bg-[#E8825F] text-white rounded-xl font-bold text-xs shadow-xs"
                 >
                   Save Activity
                 </button>
