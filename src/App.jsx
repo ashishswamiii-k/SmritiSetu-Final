@@ -6,26 +6,55 @@ import { Navigation } from './components/common/Navigation';
 import { WelcomeScreen } from './components/onboarding/WelcomeScreen';
 import { ProfileSelectionScreen } from './components/onboarding/ProfileSelectionScreen';
 import { LogoutModal } from './components/common/LogoutModal';
+import { LoginMoodModal } from './components/mood/LoginMoodModal';
 import { TodayHome } from './components/home/TodayHome';
 import { MyDaySchedule } from './components/schedule/MyDaySchedule';
 import { GameHub } from './components/games/GameHub';
 import { ReminderList } from './components/reminders/ReminderList';
 import { MoodCheckIn } from './components/mood/MoodCheckIn';
 import { PatientProfile } from './components/profile/PatientProfile';
+import { CaretakerDashboard } from './components/caretaker/CaretakerDashboard';
 import { accessibilityService } from './services/accessibilityService';
+
+import { i18nService } from './services/i18nService';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('home');
+  const [tabHistory, setTabHistory] = useState([]);
   const [allProfiles, setAllProfiles] = useState([]);
   const [currentProfile, setCurrentProfile] = useState(null);
+  const [currentLang, setCurrentLang] = useState(i18nService.getLanguage());
   const [appState, setAppState] = useState('LOADING'); // 'LOADING' | 'PROFILE_SELECTION' | 'CREATE_PROFILE' | 'MAIN_APP'
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isMoodModalOpen, setIsMoodModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  const handleNavigate = (newTab) => {
+    if (newTab !== activeTab) {
+      setTabHistory((prev) => [...prev, activeTab]);
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (tabHistory.length > 0) {
+      const prev = tabHistory[tabHistory.length - 1];
+      setTabHistory((prev) => prev.slice(0, -1));
+      setActiveTab(prev);
+    } else {
+      setActiveTab('home');
+    }
+  };
 
   useEffect(() => {
     if (accessibilityService.init) accessibilityService.init();
     else if (accessibilityService.applyToDOM) accessibilityService.applyToDOM();
     loadProfilesAndActiveState();
+
+    const unsubscribe = i18nService.subscribe((newLang) => {
+      setCurrentLang(newLang);
+    });
+    return () => unsubscribe();
   }, []);
 
   const loadProfilesAndActiveState = async () => {
@@ -40,6 +69,9 @@ export function App() {
         if (activeProf) {
           setCurrentProfile(activeProf);
           setAppState('MAIN_APP');
+          if (activeProf.role !== 'caretaker') {
+            setIsMoodModalOpen(true);
+          }
           return;
         }
       }
@@ -48,6 +80,9 @@ export function App() {
         setCurrentProfile(profiles[0]);
         localDataProvider.setActiveProfileId(profiles[0].id);
         setAppState('MAIN_APP');
+        if (profiles[0].role !== 'caretaker') {
+          setIsMoodModalOpen(true);
+        }
       } else {
         setAppState('CREATE_PROFILE');
       }
@@ -62,7 +97,20 @@ export function App() {
     const prof = await localDataProvider.getPatientProfile(profileId);
     setCurrentProfile(prof);
     setAppState('MAIN_APP');
+    if (prof.role !== 'caretaker') {
+      setIsMoodModalOpen(true);
+    } else {
+      setIsMoodModalOpen(false);
+    }
     showToast(`Switched to profile "${prof.name}"`, 'info');
+  };
+
+  const handleInspectPatient = async (patientId) => {
+    localDataProvider.setActiveProfileId(patientId);
+    const prof = await localDataProvider.getPatientProfile(patientId);
+    setCurrentProfile(prof);
+    setIsMoodModalOpen(false);
+    showToast(`Opened schedule for ${prof.name}`, 'info');
   };
 
   const handleSaveNewProfile = async (newProfileData) => {
@@ -71,6 +119,11 @@ export function App() {
     const profiles = await localDataProvider.getAllProfiles();
     setAllProfiles(profiles);
     setAppState('MAIN_APP');
+    if (saved.role !== 'caretaker') {
+      setIsMoodModalOpen(true);
+    } else {
+      setIsMoodModalOpen(false);
+    }
     showToast(`Welcome to SmritiSetu, ${saved.name}!`, 'success');
   };
 
@@ -128,7 +181,38 @@ export function App() {
     return (
       <WelcomeScreen
         onSaveProfile={handleSaveNewProfile}
+        onCancel={allProfiles.length > 0 ? () => setAppState(currentProfile ? 'MAIN_APP' : 'PROFILE_SELECTION') : null}
       />
+    );
+  }
+
+  if (appState === 'MAIN_APP' && currentProfile?.role === 'caretaker') {
+    return (
+      <>
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed top-4 right-4 z-50 animate-bounce">
+            <div className="bg-[#1B3A3A] text-white px-4 py-3 rounded-xl shadow-lg border border-white/20 text-xs font-bold flex items-center gap-2">
+              <span>{toastMessage.message}</span>
+            </div>
+          </div>
+        )}
+
+        <CaretakerDashboard
+          profile={currentProfile}
+          onRequestLogout={() => setIsLogoutModalOpen(true)}
+          onInspectPatient={handleInspectPatient}
+          onCreateNewPatient={() => setAppState('CREATE_PROFILE')}
+          onTriggerToast={showToast}
+        />
+
+        {/* Logout Confirmation Modal */}
+        <LogoutModal
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+          onConfirmLogout={handleConfirmLogout}
+        />
+      </>
     );
   }
 
@@ -146,7 +230,7 @@ export function App() {
       {/* Desktop Fixed Sidebar */}
       <Sidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleNavigate}
         profile={currentProfile}
         onRequestLogout={() => setIsLogoutModalOpen(true)}
       />
@@ -156,7 +240,9 @@ export function App() {
         <Header
           profile={currentProfile}
           activeTab={activeTab}
-          onNavigate={setActiveTab}
+          onNavigate={handleNavigate}
+          onGoBack={handleGoBack}
+          canGoBack={tabHistory.length > 0 || activeTab !== 'home'}
           onRequestLogout={() => setIsLogoutModalOpen(true)}
         />
 
@@ -164,7 +250,7 @@ export function App() {
           {activeTab === 'home' && (
             <TodayHome
               patientName={currentProfile?.name}
-              onNavigate={setActiveTab}
+              onNavigate={handleNavigate}
               onTriggerToast={showToast}
             />
           )}
@@ -206,7 +292,7 @@ export function App() {
         {/* Mobile Bottom Navigation */}
         <Navigation
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleNavigate}
         />
       </div>
 
@@ -215,6 +301,14 @@ export function App() {
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirmLogout={handleConfirmLogout}
+      />
+
+      {/* Login / Daily Welcome Mood Check-In Modal */}
+      <LoginMoodModal
+        isOpen={isMoodModalOpen}
+        onClose={() => setIsMoodModalOpen(false)}
+        profileName={currentProfile?.name}
+        onTriggerToast={showToast}
       />
     </div>
   );

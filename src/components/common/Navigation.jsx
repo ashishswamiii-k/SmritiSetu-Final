@@ -1,14 +1,15 @@
 import React from 'react';
 import { Home, Calendar, Gamepad2, Clock, Smile, User } from 'lucide-react';
+import { i18nService } from '../../services/i18nService';
 
 export function Navigation({ activeTab, onTabChange }) {
   const tabs = [
-    { id: 'home', label: 'Today', icon: Home },
-    { id: 'myday', label: 'My Day', icon: Calendar },
-    { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'reminders', label: 'Reminders', icon: Clock },
-    { id: 'mood', label: 'Mood', icon: Smile },
-    { id: 'profile', label: 'Profile', icon: User }
+    { id: 'home', labelKey: 'navHome', icon: Home },
+    { id: 'myday', labelKey: 'myDaySchedule', icon: Calendar },
+    { id: 'games', labelKey: 'navGames', icon: Gamepad2 },
+    { id: 'reminders', labelKey: 'navReminders', icon: Clock },
+    { id: 'mood', labelKey: 'navMood', icon: Smile },
+    { id: 'profile', labelKey: 'navProfile', icon: User }
   ];
 
   return (
@@ -17,6 +18,7 @@ export function Navigation({ activeTab, onTabChange }) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const label = i18nService.t(tab.labelKey);
           return (
             <button
               key={tab.id}
@@ -26,11 +28,11 @@ export function Navigation({ activeTab, onTabChange }) {
                   ? 'bg-[#E8825F] text-white font-bold scale-105 shadow-xs'
                   : 'text-stone-300 hover:text-white'
               }`}
-              aria-label={tab.label}
+              aria-label={label}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon className={`w-4 h-4 mb-0.5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
-              <span className="text-[11px] tracking-tight font-medium">{tab.label}</span>
+              <span className="text-[11px] tracking-tight font-medium">{label}</span>
             </button>
           );
         })}

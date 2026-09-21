@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { syncService } from '../../services/syncService';
 import { voiceService } from '../../services/voiceService';
 import { reminderService } from '../../services/reminderService';
+import { i18nService } from '../../services/i18nService';
 import { ProfileMenuDropdown } from './ProfileMenuDropdown';
 import logoImg from '../../assets/logo.png';
-import { Volume2, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Volume2, Wifi, WifiOff, RefreshCw, ArrowLeft } from 'lucide-react';
 
-export function Header({ profile, activeTab, onNavigate, onRequestLogout }) {
+export function Header({ profile, activeTab, onNavigate, onGoBack, canGoBack, onRequestLogout }) {
   const [networkStatus, setNetworkStatus] = useState({ state: 'ONLINE', label: 'Online', pendingCount: 0 });
 
   useEffect(() => {
@@ -30,28 +31,40 @@ export function Header({ profile, activeTab, onNavigate, onRequestLogout }) {
 
   const getPageTitle = () => {
     switch (activeTab) {
-      case 'myday': return 'My Day Schedule';
-      case 'games': return 'Mind Games';
-      case 'reminders': return 'Reminders';
-      case 'mood': return 'Mood Check-in';
-      case 'profile': return 'Profile & Settings';
-      case 'home': default: return 'Today';
+      case 'myday': return i18nService.t('myDaySchedule');
+      case 'games': return i18nService.t('mindGames');
+      case 'reminders': return i18nService.t('myReminders');
+      case 'mood': return i18nService.t('howAmIFeeling');
+      case 'profile': return i18nService.t('navProfile');
+      case 'home': default: return i18nService.t('navHome');
     }
   };
 
   return (
     <header className="sticky top-0 z-30 bg-[#F6F3EC] border-b border-[#1B3A3A]/12 px-4 md:px-8 py-3 shadow-xs transition-colors">
       <div className="w-full max-w-[1500px] mx-auto flex items-center justify-between">
-        {/* Left: Mobile Brand & Page Title */}
+        {/* Left: Back Button & Page Title */}
         <div className="flex items-center gap-3">
+          {canGoBack && (
+            <button
+              onClick={onGoBack}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-[#1B3A3A] text-[#1B3A3A] hover:text-white border border-[#1B3A3A]/20 transition-all font-bold text-xs cursor-pointer shadow-xs"
+              title="Go back to previous page"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>{i18nService.t('back')}</span>
+            </button>
+          )}
+
           <div className="md:hidden flex items-center gap-2">
             <img src={logoImg} alt="SmritiSetu" className="h-8 w-auto object-contain" />
           </div>
+
           <div>
             <h1 className="text-xl font-serif-fraunces text-[#1B3A3A] leading-tight">
               {getPageTitle()}
             </h1>
-            <p className="text-xs text-[#5B6461] hidden sm:block font-medium">Every Day, Remembered.</p>
+            <p className="text-xs text-[#5B6461] hidden sm:block font-medium">{i18nService.t('welcomeSubtitle')}</p>
           </div>
         </div>
 
@@ -64,7 +77,7 @@ export function Header({ profile, activeTab, onNavigate, onRequestLogout }) {
             title="Read next activity aloud"
           >
             <Volume2 className="w-4 h-4 text-white" />
-            <span>What's Next?</span>
+            <span>{i18nService.t('whatsNext')}</span>
           </button>
 
           {/* Network Status Indicator */}

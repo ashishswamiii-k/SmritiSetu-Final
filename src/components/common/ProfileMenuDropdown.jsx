@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AvatarSvg } from '../profile/AvatarLibrary';
+import { i18nService } from '../../services/i18nService';
 import { User, Settings, Eye, LogOut, ChevronDown } from 'lucide-react';
 
 export function ProfileMenuDropdown({ profile, onNavigate, onRequestLogout }) {
@@ -68,7 +69,7 @@ export function ProfileMenuDropdown({ profile, onNavigate, onRequestLogout }) {
               <h4 className="text-sm font-bold text-[#1B3A3A] truncate max-w-[140px]">
                 {profile?.name || 'SmritiSetu User'}
               </h4>
-              <p className="text-[11px] text-[#7FA593] font-semibold">Every Day, Remembered.</p>
+              <p className="text-[11px] text-[#7FA593] font-semibold">{i18nService.t('welcomeSubtitle')}</p>
             </div>
           </div>
 
@@ -79,7 +80,7 @@ export function ProfileMenuDropdown({ profile, onNavigate, onRequestLogout }) {
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-[#1B3A3A] hover:bg-[#F6F3EC] transition-colors min-h-[40px]"
             >
               <User className="w-4 h-4 text-[#E8825F]" />
-              <span>My Profile</span>
+              <span>{i18nService.t('myProfile')}</span>
             </button>
 
             <button
@@ -87,7 +88,7 @@ export function ProfileMenuDropdown({ profile, onNavigate, onRequestLogout }) {
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-[#1B3A3A] hover:bg-[#F6F3EC] transition-colors min-h-[40px]"
             >
               <Eye className="w-4 h-4 text-[#7FA593]" />
-              <span>Accessibility & Text Size</span>
+              <span>{i18nService.t('accessibilityTextSize')}</span>
             </button>
           </div>
 
@@ -98,7 +99,7 @@ export function ProfileMenuDropdown({ profile, onNavigate, onRequestLogout }) {
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors min-h-[40px]"
             >
               <LogOut className="w-4 h-4 text-rose-600" />
-              <span>Logout (Switch User)</span>
+              <span>{i18nService.t('logoutSwitchUser')}</span>
             </button>
           </div>
         </div>

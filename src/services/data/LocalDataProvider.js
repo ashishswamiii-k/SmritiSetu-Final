@@ -19,6 +19,7 @@ export class LocalDataProvider extends DataProvider {
         language: 'en',
         textSize: 'standard',
         voiceEnabled: true,
+        role: 'patient',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -66,19 +67,33 @@ export class LocalDataProvider extends DataProvider {
     return this.inMemoryProfiles;
   }
 
+  generatePatientCode(profileId = '') {
+    let seed = 0;
+    for (let i = 0; i < profileId.length; i++) {
+      seed = (seed + profileId.charCodeAt(i) * 17) % 8999;
+    }
+    const num = 1000 + (seed || Math.floor(Math.random() * 8999));
+    return `PAT-${num}`;
+  }
+
   async getPatientProfile(profileId = null) {
     const targetId = profileId || (await this.getActiveProfileId());
+    let profile = null;
     try {
       const db = await this.dbPromise;
       if (db && db.get) {
-        const profile = await db.get('profiles', targetId);
-        if (profile) return profile;
+        profile = await db.get('profiles', targetId);
       }
     } catch (e) {
       console.warn("getPatientProfile DB fallback:", e);
     }
-    const match = this.inMemoryProfiles.find(p => p.id === targetId);
-    return match || this.inMemoryProfiles[0];
+    if (!profile) {
+      profile = this.inMemoryProfiles.find(p => p.id === targetId) || this.inMemoryProfiles[0];
+    }
+    if (profile && profile.role !== 'caretaker' && !profile.patientCode) {
+      profile.patientCode = this.generatePatientCode(profile.id);
+    }
+    return profile;
   }
 
   async savePatientProfile(profile) {
@@ -86,6 +101,10 @@ export class LocalDataProvider extends DataProvider {
     const record = {
       id,
       name: profile.name,
+      role: profile.role || 'patient',
+      patientCode: profile.role !== 'caretaker' ? (profile.patientCode || this.generatePatientCode(id)) : null,
+      password: profile.password || (profile.role === 'caretaker' ? (profile.password || '1234') : null),
+      linkedPatientIds: profile.linkedPatientIds || [],
       gender: profile.gender || 'unspecified',
       avatar: profile.avatar || 'male_1',
       avatarType: profile.avatarType || 'vector',
@@ -118,6 +137,125 @@ export class LocalDataProvider extends DataProvider {
     this.setActiveProfileId(id);
     await this.seedProfileReminders(id);
     return record;
+  }
+
+  // --- Caretaker Security & Patient Access Code Methods ---
+  async getPatientByCode(patientCode) {
+    if (!patientCode) return null;
+    const cleanCode = String(patientCode).trim().toUpperCase();
+    const profiles = await this.getAllProfiles();
+    const match = profiles.find(p => p.role !== 'caretaker' && (
+      (p.patientCode && p.patientCode.toUpperCase() === cleanCode) ||
+      (p.id && p.id.toUpperCase() === cleanCode)
+    ));
+    return match || null;
+  }
+
+  async linkPatientToCaretaker(caretakerId, patientCode) {
+    const patient = await this.getPatientByCode(patientCode);
+    if (!patient) {
+      return { success: false, message: 'Invalid Patient Access Code. No patient profile found.' };
+    }
+
+    const caretaker = await this.getPatientProfile(caretakerId);
+    if (!caretaker) {
+      return { success: false, message: 'Caretaker profile not found.' };
+    }
+
+    const currentLinks = caretaker.linkedPatientIds || [];
+    if (!currentLinks.includes(patient.id)) {
+      caretaker.linkedPatientIds = [...currentLinks, patient.id];
+      await this.savePatientProfile(caretaker);
+    }
+
+    return { success: true, message: `Successfully linked patient ${patient.name}!`, patient };
+  }
+
+  async verifyCaretakerPassword(profileId, password) {
+    const prof = await this.getPatientProfile(profileId);
+    if (!prof) return false;
+    const expectedPassword = prof.password || '1234';
+    return String(password).trim() === String(expectedPassword).trim();
+  }
+
+  async changeCaretakerPassword(profileId, oldPassword, newPassword) {
+    const prof = await this.getPatientProfile(profileId);
+    if (!prof) return { success: false, message: 'Profile not found.' };
+
+    const isValid = await this.verifyCaretakerPassword(profileId, oldPassword);
+    if (!isValid) {
+      return { success: false, message: 'Current password does not match.' };
+    }
+
+    if (!newPassword || newPassword.trim().length < 3) {
+      return { success: false, message: 'New password must be at least 3 characters.' };
+    }
+
+    prof.password = newPassword.trim();
+    await this.savePatientProfile(prof);
+    return { success: true, message: 'Password updated successfully.' };
+  }
+
+  async getMultiPatientDatabaseSummary(caretakerId = null) {
+    const allProfiles = await this.getAllProfiles();
+    let patientProfiles = allProfiles.filter(p => p.role !== 'caretaker');
+
+    // Populate patientCode if missing
+    patientProfiles = patientProfiles.map(p => {
+      if (!p.patientCode) p.patientCode = this.generatePatientCode(p.id);
+      return p;
+    });
+
+    if (caretakerId) {
+      const caretaker = await this.getPatientProfile(caretakerId);
+      const linkedIds = caretaker?.linkedPatientIds || [];
+      patientProfiles = patientProfiles.filter(p => linkedIds.includes(p.id));
+    }
+
+    let allReminders = [];
+    try {
+      const db = await this.dbPromise;
+      if (db && db.getAll) {
+        allReminders = await db.getAll('reminders');
+      }
+    } catch (e) {
+      console.warn("getMultiPatientDatabaseSummary DB fallback:", e);
+    }
+
+    let allMoods = [];
+    try {
+      const db = await this.dbPromise;
+      if (db && db.getAll) {
+        allMoods = await db.getAll('mood_checkins');
+      }
+    } catch (e) {
+      console.warn("getMultiPatientDatabaseSummary Mood DB fallback:", e);
+    }
+
+    const summaries = patientProfiles.map(patient => {
+      const patientReminders = allReminders.filter(r => r.patientId === patient.id);
+      const totalTasks = patientReminders.length > 0 ? patientReminders.length : 9;
+      const completedTasks = patientReminders.filter(r => r.status === 'done').length;
+
+      const patientMoods = allMoods
+        .filter(m => m.patientId === patient.id)
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      const latestMood = patientMoods.length > 0 ? patientMoods[0] : null;
+      const pendingReminders = patientReminders.filter(r => r.status !== 'done');
+
+      return {
+        patient,
+        totalTasks,
+        completedTasks,
+        completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+        latestMood,
+        pendingCount: pendingReminders.length,
+        nextTask: pendingReminders.length > 0 ? pendingReminders[0] : null
+      };
+    });
+
+    return summaries;
   }
 
   async seedProfileReminders(patientId) {

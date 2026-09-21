@@ -3,15 +3,16 @@ import { Home, Calendar, Gamepad2, Clock, Smile, User, Volume2, LogOut } from 'l
 import { AvatarSvg } from '../profile/AvatarLibrary';
 import logoImg from '../../assets/logo.png';
 import { voiceService } from '../../services/voiceService';
+import { i18nService } from '../../services/i18nService';
 
 export function Sidebar({ activeTab, onTabChange, profile, onRequestLogout }) {
   const navItems = [
-    { id: 'home', label: 'Today', icon: Home },
-    { id: 'myday', label: 'My Day', icon: Calendar },
-    { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'reminders', label: 'Reminders', icon: Clock },
-    { id: 'mood', label: 'Mood', icon: Smile },
-    { id: 'profile', label: 'Profile', icon: User }
+    { id: 'home', labelKey: 'navHome', icon: Home },
+    { id: 'myday', labelKey: 'myDaySchedule', icon: Calendar },
+    { id: 'games', labelKey: 'navGames', icon: Gamepad2 },
+    { id: 'reminders', labelKey: 'navReminders', icon: Clock },
+    { id: 'mood', labelKey: 'navMood', icon: Smile },
+    { id: 'profile', labelKey: 'navProfile', icon: User }
   ];
 
   const handleHearSchedule = () => {
@@ -32,7 +33,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onRequestLogout }) {
             className="h-14 w-auto object-contain mb-1 drop-shadow-sm"
           />
           <p className="text-[11px] text-[#7FA593] font-semibold tracking-wide">
-            Every Day, Remembered.
+            {i18nService.t('welcomeSubtitle')}
           </p>
         </div>
 
@@ -57,7 +58,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onRequestLogout }) {
                 }`}>
                   <Icon className="w-3.5 h-3.5 stroke-[2.2]" />
                 </div>
-                <span>{item.label}</span>
+                <span>{i18nService.t(item.labelKey)}</span>
               </button>
             );
           })}
@@ -82,7 +83,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onRequestLogout }) {
           )}
           <div className="overflow-hidden text-left flex-1">
             <h4 className="text-xs font-bold text-white truncate">{profile?.name || 'User'}</h4>
-            <span className="text-[10px] text-[#7FA593] block">Active Profile</span>
+            <span className="text-[10px] text-[#7FA593] block">{i18nService.t('activeProfile')}</span>
           </div>
         </div>
 
@@ -92,7 +93,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onRequestLogout }) {
           className="w-full bg-[#E8825F] hover:bg-[#d97352] text-white font-bold text-xs py-2 px-3 rounded-lg transition-colors min-h-[36px] flex items-center justify-center gap-1.5"
         >
           <Volume2 className="w-3.5 h-3.5 text-white" />
-          <span>Hear Schedule</span>
+          <span>{i18nService.t('hearSchedule')}</span>
         </button>
 
         {/* Logout Action */}
@@ -101,7 +102,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onRequestLogout }) {
           className="w-full bg-white/5 hover:bg-white/10 text-stone-300 hover:text-white font-semibold text-xs py-2 px-3 rounded-lg transition-colors min-h-[36px] flex items-center justify-center gap-1.5"
         >
           <LogOut className="w-3.5 h-3.5 text-stone-400" />
-          <span>Switch User</span>
+          <span>{i18nService.t('switchUser')}</span>
         </button>
       </div>
     </aside>
